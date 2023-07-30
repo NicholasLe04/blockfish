@@ -64,20 +64,8 @@ def move_generation_test(board, depth):
         numPositions += move_generation_test(sim_board, depth-1)
     return numPositions
 
+start = time.time()
+print(move_generation_test(Board(), 3))
+print(time.time() - start)
 
-# WORK ON: IF IN CHECK, MUST MAKE A MOVE THAT WILL TAKE OUT OF CHEKCf
-
-b = Board()
-#b.from_FEN('r1bq1rk1/p2p1p1p/npp1p1p1/4b3/2P5/1n4P1/3P2BP/RNBQK1NR w KQ - 0 15')
-# while True:
-#     fen = input("GIMME THE FEN: ")
-#     b.from_FEN(fen)
-#     start = time.time()
-#     eval, move = minimax(board=b, depth=4, alpha=-math.inf, beta=math.inf, maximizing_player=True)
-#     transposition_table = {}
-#     print(f"Move: {move} | Estimated Eval: {eval}")
-#     b.move(move)
-#     b.print_board()
-#     print("Compute Time: " + str(time.time() - start))
-
-print(move_generation_test(b, 3))
+# ~0.7s pre bitboard
