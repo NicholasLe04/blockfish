@@ -5,21 +5,10 @@ import pieces.rook as rook
 import pieces.queen as queen
 import pieces.king as king
 
-from bitboard_util import get_bit, bitboard_to_board, index_of_MSB, index_of_LSB, bitscan
+from bitboard_util import set_bit, get_bit, index_of_LSB, index_of_MSB, bitscan, bitboard_to_board
+from constants import PIECE_VALUES, INDEX_TO_POSITION, POSITION_TO_INDEX, W_KING_CASTLE_CLEAR, W_QUEEN_CASTLE_CLEAR, B_KING_CASTLE_CLEAR, B_QUEEN_CASTLE_CLEAR
 
-import constants
 import time
-
-KNIGHT_DIRECTIONS = [ -25, -23, -10, 14, 25, 23, 10, -14 ]
-BISHOP_DIRECTIONS = [ -13, -11, 11, 13 ]
-ROOK_DIRECTIONS = [ -1, -12, 1, 12 ]
-QUEEN_DIRECTIONS = ROOK_DIRECTIONS + BISHOP_DIRECTIONS
-KING_DIRECTIONS = ROOK_DIRECTIONS + BISHOP_DIRECTIONS
-
-PIECE_VALUES = { 
-                'P': 1, 'N': 3.05, 'B': 3.33, 'R': 5.63, 'Q': 9.5, 'K': 0 , 
-                } # Per AlphaZero
-
 
 class Position():
 
@@ -44,9 +33,83 @@ class Position():
         self.all_pieces_bb = (self.w_pawn_bb | self.w_knight_bb | self.w_bishop_bb | self.w_rook_bb | self.w_queen_bb | self.w_king_bb |
                                self.b_pawn_bb | self.b_knight_bb | self.b_bishop_bb | self.b_rook_bb | self.b_queen_bb | self.b_king_bb)
 
+        self.white_side = True
         self.castle_availability = { "K": True, "Q": True, "k": True, "q": True }
+        self.fifty_rule_counter = 0
         self.en_passant_square = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
 
+    def _update_bitboards(self):
+        self.w_pieces_bb = self.w_pawn_bb | self.w_knight_bb | self.w_bishop_bb | self.w_rook_bb | self.w_queen_bb | self.w_king_bb
+        self.b_pieces_bb = self.b_pawn_bb | self.b_knight_bb | self.b_bishop_bb | self.b_rook_bb | self.b_queen_bb | self.b_king_bb
+        self.all_pieces_bb = (self.w_pawn_bb | self.w_knight_bb | self.w_bishop_bb | self.w_rook_bb | self.w_queen_bb | self.w_king_bb |
+                               self.b_pawn_bb | self.b_knight_bb | self.b_bishop_bb | self.b_rook_bb | self.b_queen_bb | self.b_king_bb)
+
+    def from_FEN(self, fen:str):
+        pieces, active_side, castling, ep_square, fifty_rule_counter, _ = fen.split(' ')
+
+        # Update Pieces
+        self.w_pawn_bb, self.w_knight_bb, self.w_bishop_bb, self.w_rook_bb, self.w_queen_bb, self.w_king_bb = 0, 0, 0, 0, 0, 0
+        self.b_pawn_bb, self.b_knight_bb, self.b_bishop_bb, self.b_rook_bb, self.b_queen_bb, self.b_king_bb = 0, 0, 0, 0, 0, 0
+
+        piece_list = list()
+        for i in range(len(pieces)):
+            if pieces[i].isalpha():
+                piece_list.append(pieces[i])
+            elif pieces[i].isdigit():
+                empty_squares = list()
+                for _ in range(int(pieces[i])):
+                    empty_squares.append(' ')
+                piece_list += empty_squares
+        piece_list.reverse()
+
+        for i in range(64):
+            if piece_list[i] == 'P':
+                self.w_pawn_bb = set_bit(self.w_pawn_bb, i)
+            elif piece_list[i] == 'N':
+                self.w_knight_bb = set_bit(self.w_knight_bb, i)
+            elif piece_list[i] == 'B':
+                self.w_bishop_bb = set_bit(self.w_bishop_bb, i)
+            elif piece_list[i] == 'R':
+                self.w_rook_bb = set_bit(self.w_rook_bb, i)
+            elif piece_list[i] == 'Q':
+                self.w_queen_bb = set_bit(self.w_queen_bb, i)
+            elif piece_list[i] == 'K':
+                self.w_king_bb = set_bit(self.w_king_bb, i)
+
+            elif piece_list[i] == 'p':
+                self.b_pawn_bb = set_bit(self.b_pawn_bb, i)
+            elif piece_list[i] == 'n':
+                self.b_knight_bb = set_bit(self.b_knight_bb, i)
+            elif piece_list[i] == 'b':
+                self.b_bishop_bb = set_bit(self.b_bishop_bb, i)
+            elif piece_list[i] == 'r':
+                self.b_rook_bb = set_bit(self.b_rook_bb, i)
+            elif piece_list[i] == 'q':
+                self.b_queen_bb = set_bit(self.b_queen_bb, i)
+            elif piece_list[i] == 'k':
+                self.b_king_bb = set_bit(self.b_king_bb, i)
+
+        self._update_bitboards()
+
+        # Update Side
+        if active_side == 'w':
+            self.white_side = True
+        else:
+            self.white_side = False
+
+        # Update Castling
+        # self.castle_availability = { "K": True, "Q": True, "k": True, "q": True }
+        self.castle_availability = { "K": False, "Q": False, "k": False, "q": False }
+        if castling != '-':
+            for el in castling:
+                self.castle_availability[el] = True
+
+        if ep_square != '-':
+            ep_idx = POSITION_TO_INDEX[ep_square]
+            set_bit(self.en_passant_square, ep_idx)
+
+        self.fifty_rule_counter = fifty_rule_counter
+        
     def get_attacking_bitboard(self, white=True):
         if white:
             white_attacking_bb = 0
@@ -118,7 +181,7 @@ class Position():
         evalution -= PIECE_VALUES['Q'] if self.b_queen_bb else 0
 
         return evalution
-    # .00025
+    
     def get_legal_moves(self, white=True):
         moves = []
         if white:
@@ -198,10 +261,11 @@ class Position():
                             else:
                                 moves.append({"piece": 'K', "start": idx, "end": end_idx, "code": 0})
                             # Castle
-                            if self.castle_availability['K'] and not (constants.W_KING_CASTLE_CLEAR & self.all_pieces_bb):
+                            if self.castle_availability['K'] and not (W_KING_CASTLE_CLEAR & self.all_pieces_bb):
                                 moves.append({"piece": 'K', "code": 2})
-                            if self.castle_availability['Q'] and not (constants.W_QUEEN_CASTLE_CLEAR & self.all_pieces_bb):
+                            if self.castle_availability['Q'] and not (W_QUEEN_CASTLE_CLEAR & self.all_pieces_bb):
                                 moves.append({"piece": 'K', "code": 3})
+            return moves
         else:
             for idx in bitscan(self.b_pieces_bb):
                 if get_bit(self.b_pieces_bb, idx):
@@ -279,13 +343,17 @@ class Position():
                             else:
                                 moves.append({"piece": 'k', "start": idx, "end": end_idx, "code": 0})
                             # Castle
-                            if self.castle_availability['k'] and not (constants.B_KING_CASTLE_CLEAR & self.all_pieces_bb):
+                            if self.castle_availability['k'] and not (B_KING_CASTLE_CLEAR & self.all_pieces_bb):
                                 moves.append({"piece": 'k', "code": 2})
-                            if self.castle_availability['q'] and not (constants.B_QUEEN_CASTLE_CLEAR & self.all_pieces_bb):
+                            if self.castle_availability['q'] and not (B_QUEEN_CASTLE_CLEAR & self.all_pieces_bb):
                                 moves.append({"piece": 'k', "code": 3})
             return moves
 
-
+    def make_move(self, move:dict):
+        '''Give a move in dictionary format (i.e. {"piece": 'P', "start": 8, "end": 16, "code": 0})'''
+        if move["piece"] == 'p':
+            # HERE NOW DSJfa;lskfj;lasjf;ldsj
+            pass
 
 b = Position()
 
@@ -295,6 +363,9 @@ start = time.time()
 # bitboard_to_board(bin(rook.w_rook_attacks(37, b.w_pieces_bb, b.all_pieces_bb)))
 # bitboard_to_board(bin(queen.b_queen_attacks(35, b.b_pieces_bb, b.all_pieces_bb)))
 # bitboard_to_board(bin(b.get_attacking_bitboard(white=True)))
-print(len(b.get_legal_moves(False)))
+#bitboard_to_board(bin(b.all_pieces_bb))
+b.from_FEN("rnbqkbnr/pppppp1p/8/6p1/8/4P3/PPPP1PPP/RNBQKBNR w KQkq g6 0 2")
+print(b.get_legal_moves(True))
+bitboard_to_board(bin(b.all_pieces_bb))
 print(time.time() - start)
 
