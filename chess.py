@@ -5,10 +5,12 @@ import pieces.rook as rook
 import pieces.queen as queen
 import pieces.king as king
 
-from bitboard_util import set_bit, get_bit, index_of_LSB, index_of_MSB, bitscan, bitboard_to_board
-from constants import PIECE_VALUES, INDEX_TO_POSITION, POSITION_TO_INDEX, W_KING_CASTLE_CLEAR, W_QUEEN_CASTLE_CLEAR, B_KING_CASTLE_CLEAR, B_QUEEN_CASTLE_CLEAR
+from bitboard_util import set_bit, get_bit, clear_bit, index_of_LSB, index_of_MSB, bitscan, bitboard_to_board
+from constants import PIECE_VALUES, POSITION_TO_INDEX, W_KING_CASTLE_CLEAR, W_QUEEN_CASTLE_CLEAR, B_KING_CASTLE_CLEAR, B_QUEEN_CASTLE_CLEAR
 
 import time
+import copy
+
 
 class Position():
 
@@ -37,6 +39,7 @@ class Position():
         self.castle_availability = { "K": True, "Q": True, "k": True, "q": True }
         self.fifty_rule_counter = 0
         self.en_passant_square = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
+        self.move_stack = []
 
     def _update_bitboards(self):
         self.w_pieces_bb = self.w_pawn_bb | self.w_knight_bb | self.w_bishop_bb | self.w_rook_bb | self.w_queen_bb | self.w_king_bb
@@ -108,27 +111,34 @@ class Position():
             ep_idx = POSITION_TO_INDEX[ep_square]
             set_bit(self.en_passant_square, ep_idx)
 
-        self.fifty_rule_counter = fifty_rule_counter
+        self.fifty_rule_counter = int(fifty_rule_counter)
         
     def get_attacking_bitboard(self, white=True):
         if white:
             white_attacking_bb = 0
             white_attacking_bb |= pawn.w_pawn_attacks(self.w_pawn_bb)
 
-            knight_1, knight_2 = index_of_LSB(self.w_knight_bb), index_of_MSB(self.w_knight_bb)
-            white_attacking_bb |= knight.knight_attacks(knight_1)
-            white_attacking_bb |= knight.knight_attacks(knight_2)
+            if self.w_knight_bb:
+                knight_1, knight_2 = index_of_LSB(self.w_knight_bb), index_of_MSB(self.w_knight_bb)
+                white_attacking_bb |= knight.knight_attacks(knight_1)
+                if knight_1 != knight_2:
+                    white_attacking_bb |= knight.knight_attacks(knight_2)
 
-            bishop_1, bishop_2 = index_of_LSB(self.w_bishop_bb), index_of_MSB(self.w_bishop_bb)
-            white_attacking_bb |= bishop.bishop_attacks(bishop_1, self.all_pieces_bb)
-            white_attacking_bb |= bishop.bishop_attacks(bishop_2, self.all_pieces_bb)
+            if self.w_bishop_bb:
+                bishop_1, bishop_2 = index_of_LSB(self.w_bishop_bb), index_of_MSB(self.w_bishop_bb)
+                white_attacking_bb |= bishop.bishop_attacks(bishop_1, self.all_pieces_bb)
+                if bishop_1 != bishop_2:
+                    white_attacking_bb |= bishop.bishop_attacks(bishop_2, self.all_pieces_bb)
 
-            rook_1, rook_2 = index_of_LSB(self.w_rook_bb), index_of_MSB(self.w_rook_bb)
-            white_attacking_bb |= rook.rook_attacks(rook_1, self.all_pieces_bb)
-            white_attacking_bb |= rook.rook_attacks(rook_2, self.all_pieces_bb)
+            if self.w_rook_bb:
+                rook_1, rook_2 = index_of_LSB(self.w_rook_bb), index_of_MSB(self.w_rook_bb)
+                white_attacking_bb |= rook.rook_attacks(rook_1, self.all_pieces_bb)
+                if rook_1 != rook_2:
+                    white_attacking_bb |= rook.rook_attacks(rook_2, self.all_pieces_bb)
 
-            queen_1 = index_of_LSB(self.w_queen_bb)
-            white_attacking_bb |= queen.queen_attacks(queen_1, self.all_pieces_bb)
+            if self.w_queen_bb:
+                queen_1 = index_of_LSB(self.w_queen_bb)
+                white_attacking_bb |= queen.queen_attacks(queen_1, self.all_pieces_bb)
 
             king_1 = index_of_LSB(self.w_king_bb)
             white_attacking_bb |= king.king_targets(king_1)
@@ -138,27 +148,34 @@ class Position():
             black_attacking_bb = 0
             black_attacking_bb |= pawn.b_pawn_attacks(self.b_pawn_bb)
 
-            knight_1, knight_2 = index_of_LSB(self.b_knight_bb), index_of_MSB(self.b_knight_bb)
-            black_attacking_bb |= knight.knight_attacks(knight_1)
-            black_attacking_bb |= knight.knight_attacks(knight_2)
+            if self.b_knight_bb:
+                knight_1, knight_2 = index_of_LSB(self.b_knight_bb), index_of_MSB(self.b_knight_bb)
+                black_attacking_bb |= knight.knight_attacks(knight_1)
+                if knight_1 != knight_2:
+                    black_attacking_bb |= knight.knight_attacks(knight_2)
 
-            bishop_1, bishop_2 = index_of_LSB(self.b_bishop_bb), index_of_MSB(self.b_bishop_bb)
-            black_attacking_bb |= bishop.bishop_attacks(bishop_1, self.all_pieces_bb)
-            black_attacking_bb |= bishop.bishop_attacks(bishop_2, self.all_pieces_bb)
+            if self.b_bishop_bb:
+                bishop_1, bishop_2 = index_of_LSB(self.b_bishop_bb), index_of_MSB(self.b_bishop_bb)
+                black_attacking_bb |= bishop.bishop_attacks(bishop_1, self.all_pieces_bb)
+                if bishop_1 != bishop_2:
+                    black_attacking_bb |= bishop.bishop_attacks(bishop_2, self.all_pieces_bb)
 
-            rook_1, rook_2 = index_of_LSB(self.b_rook_bb), index_of_MSB(self.b_rook_bb)
-            black_attacking_bb |= rook.rook_attacks(rook_1, self.all_pieces_bb)
-            black_attacking_bb |= rook.rook_attacks(rook_2, self.all_pieces_bb)
+            if self.b_rook_bb:
+                rook_1, rook_2 = index_of_LSB(self.b_rook_bb), index_of_MSB(self.b_rook_bb)
+                black_attacking_bb |= rook.rook_attacks(rook_1, self.all_pieces_bb)
+                if rook_1 != rook_2:
+                    black_attacking_bb |= rook.rook_attacks(rook_2, self.all_pieces_bb)
 
-            queen_1 = index_of_LSB(self.b_queen_bb)
-            black_attacking_bb |= queen.queen_attacks(queen_1, self.all_pieces_bb)
+            if self.b_queen_bb:
+                queen_1 = index_of_LSB(self.b_queen_bb)
+                black_attacking_bb |= queen.queen_attacks(queen_1, self.all_pieces_bb)
 
             king_1 = index_of_LSB(self.b_king_bb)
             black_attacking_bb |= king.king_targets(king_1)
 
             return black_attacking_bb
 
-    def material_eval(self):
+    def evaluation(self):
         evalution = 0
         # Pawn material
         evalution += (PIECE_VALUES['P'] * bin(self.w_pawn_bb).count("1"))
@@ -195,7 +212,7 @@ class Position():
                                 moves.append({"piece": 'P', "start": idx, "end": idx + 8, "code": 0})
                             # Check if the pawn can move two squares forward from its starting position
                             if row == 1 and not get_bit(self.all_pieces_bb, idx + 16) and not get_bit(self.all_pieces_bb, idx + 8):
-                                moves.append({"piece": 'P', "start": idx, "end": idx + 16, "code": 0})
+                                moves.append({"piece": 'P', "start": idx, "end": idx + 16, "code": 1})
                             # Check if the pawn can capture diagonally (left and right)
                             if col > 0 and get_bit(self.b_pieces_bb, idx + 7):
                                 moves.append({"piece": 'P', "start": idx, "end": idx + 7, "code": 4})
@@ -265,7 +282,7 @@ class Position():
                                 moves.append({"piece": 'K', "code": 2})
                             if self.castle_availability['Q'] and not (W_QUEEN_CASTLE_CLEAR & self.all_pieces_bb):
                                 moves.append({"piece": 'K', "code": 3})
-            return moves
+
         else:
             for idx in bitscan(self.b_pieces_bb):
                 if get_bit(self.b_pieces_bb, idx):
@@ -277,7 +294,7 @@ class Position():
                                 moves.append({"piece": 'p', "start": idx, "end": idx - 8, "code": 0})
                             # Check if the pawn can move two squares forward from its starting position
                             if row == 6 and not get_bit(self.all_pieces_bb, idx - 16) and not get_bit(self.all_pieces_bb, idx - 8):
-                                moves.append({"piece": 'p', "start": idx, "end": idx - 16, "code": 0})
+                                moves.append({"piece": 'p', "start": idx, "end": idx - 16, "code": 1})
                             # Check if the pawn can capture diagonally (left and right)
                             if col < 7 and get_bit(self.w_pieces_bb, idx - 7):
                                 moves.append({"piece": 'p', "start": idx, "end": idx - 7, "code": 4})
@@ -347,25 +364,239 @@ class Position():
                                 moves.append({"piece": 'k', "code": 2})
                             if self.castle_availability['q'] and not (B_QUEEN_CASTLE_CLEAR & self.all_pieces_bb):
                                 moves.append({"piece": 'k', "code": 3})
-            return moves
+        
+        legal_moves = []
+        for move in moves:
+            sim_board = copy.deepcopy(self)
+            sim_board.make_move(move)
+            if not sim_board.in_check(white):
+                legal_moves.append(move)
+        
+        return legal_moves
+
+    def in_check(self, white=True) -> bool:
+        if white:
+            return bool(self.w_king_bb & self.get_attacking_bitboard(False))
+        else:
+            return bool(self.b_king_bb & self.get_attacking_bitboard(True))
+
+    def in_checkmate(self, white=True) -> bool:
+        if self.in_check():
+            moves = self.get_legal_moves(white)
+            for move in moves:
+                sim_board = copy.deepcopy(self)
+                sim_board.make_move(move)
+                if not sim_board.in_check(white):
+                    return False
+            return True
+        return False
+
+    def in_fifty_move_rule_draw(self) -> bool:
+        if self.fifty_rule_counter >= 50:
+            return True
+        return False
+    
+    def in_threefold_rep_draw(self) -> bool:
+        last_move_idx = len(self.move_stack)-1
+        if last_move_idx < 6:
+            return False
+        if (self.move_stack[last_move_idx] == self.move_stack[last_move_idx-2] == self.move_stack[last_move_idx[-4]]) and (self.move_stack[last_move_idx-1] == self.move_stack[last_move_idx-3] == self.move_stack[last_move_idx[-5]]):
+            return True
+        else:
+            return False
+
+    def in_game_over(self):
+        return self.in_checkmate() or self.in_checkmate(False) or self.in_fifty_move_rule_draw() or self.in_threefold_rep_draw()
 
     def make_move(self, move:dict):
         '''Give a move in dictionary format (i.e. {"piece": 'P', "start": 8, "end": 16, "code": 0})'''
-        if move["piece"] == 'p':
-            # HERE NOW DSJfa;lskfj;lasjf;ldsj
-            pass
 
-b = Position()
+        self.en_passant_square = 0
 
-start = time.time()
-# bitboard_to_board(bin(knight.w_knight_targets(25, b.w_pieces_bb)))
-#bitboard_to_board(bin(bishop.bishop_moves(2, b.all_pieces_bb, b.all_pieces_bb)))
-# bitboard_to_board(bin(rook.w_rook_attacks(37, b.w_pieces_bb, b.all_pieces_bb)))
-# bitboard_to_board(bin(queen.b_queen_attacks(35, b.b_pieces_bb, b.all_pieces_bb)))
-# bitboard_to_board(bin(b.get_attacking_bitboard(white=True)))
-#bitboard_to_board(bin(b.all_pieces_bb))
-b.from_FEN("rnbqkbnr/pppppp1p/8/6p1/8/4P3/PPPP1PPP/RNBQKBNR w KQkq g6 0 2")
-print(b.get_legal_moves(True))
-bitboard_to_board(bin(b.all_pieces_bb))
-print(time.time() - start)
+        match move["code"]:
 
+            case 0 | 4: # Quiet Moves and Captures
+
+                match move["piece"]:
+                    case 'P':
+                        self.w_pawn_bb = clear_bit(self.w_pawn_bb, move["start"])
+                        self.w_pawn_bb = set_bit(self.w_pawn_bb, move["end"])
+                    case 'N':
+                        self.w_knight_bb = clear_bit(self.w_knight_bb, move["start"])
+                        self.w_knight_bb = set_bit(self.w_knight_bb, move["end"])
+                    case 'B':
+                        self.w_bishop_bb = clear_bit(self.w_bishop_bb, move["start"])
+                        self.w_bishop_bb = set_bit(self.w_bishop_bb, move["end"])
+                    case 'R':
+                        self.w_rook_bb = clear_bit(self.w_rook_bb, move["start"])
+                        self.w_rook_bb = set_bit(self.w_rook_bb, move["end"])
+                    case 'Q':
+                        self.w_queen_bb = clear_bit(self.w_queen_bb, move["start"])
+                        self.w_queen_bb = set_bit(self.w_queen_bb, move["end"])
+                    case 'K':
+                        self.w_king_bb = clear_bit(self.w_king_bb, move["start"])
+                        self.w_king_bb = set_bit(self.w_king_bb, move["end"])
+                    case 'p':
+                        self.b_pawn_bb = clear_bit(self.b_pawn_bb, move["start"])
+                        self.b_pawn_bb = set_bit(self.b_pawn_bb, move["end"])
+                    case 'n':
+                        self.b_knight_bb = clear_bit(self.b_knight_bb, move["start"])
+                        self.b_knight_bb = set_bit(self.b_knight_bb, move["end"])
+                    case 'b':
+                        self.b_bishop_bb = clear_bit(self.b_bishop_bb, move["start"])
+                        self.b_bishop_bb = set_bit(self.b_bishop_bb, move["end"])
+                    case 'r':
+                        self.b_rook_bb = clear_bit(self.b_rook_bb, move["start"])
+                        self.b_rook_bb = set_bit(self.b_rook_bb, move["end"])
+                    case 'q':
+                        self.b_queen_bb = clear_bit(self.b_queen_bb, move["start"])
+                        self.b_queen_bb = set_bit(self.b_queen_bb, move["end"])
+                    case 'k':
+                        self.b_king_bb = clear_bit(self.b_king_bb, move["start"])
+                        self.b_king_bb = set_bit(self.b_king_bb, move["end"])
+                    
+                if move["code"] == 4:
+                    if move["piece"].isupper():
+                        end_index_mask = ~(1 << move["end"])
+                        self.b_pawn_bb &= end_index_mask
+                        self.b_knight_bb &= end_index_mask
+                        self.b_bishop_bb &= end_index_mask
+                        self.b_rook_bb &= end_index_mask
+                        self.b_queen_bb &= end_index_mask
+                        self.b_king_bb &= end_index_mask
+
+                    else:
+                        end_index_mask = ~(1 << move["end"])
+                        self.w_pawn_bb &= end_index_mask
+                        self.w_knight_bb &= end_index_mask
+                        self.w_bishop_bb &= end_index_mask
+                        self.w_rook_bb &= end_index_mask
+                        self.w_queen_bb &= end_index_mask
+                        self.w_king_bb &= end_index_mask
+
+            case 1: # Double Pawn Push
+                if move["piece"] == 'P':
+                    self.w_pawn_bb = clear_bit(self.w_pawn_bb, move["start"])
+                    self.w_pawn_bb = set_bit(self.w_pawn_bb, move["end"])
+                    self.en_passant_square = (1 << (move["start"] + 8))
+                else:
+                    self.b_pawn_bb = clear_bit(self.b_pawn_bb, move["start"])
+                    self.b_pawn_bb = set_bit(self.b_pawn_bb, move["end"])
+                    self.en_passant_square = (1 << (move["start"] - 8))
+
+            case 2: # King Side Castle
+                if move["piece"].isupper(): # White
+                    self.w_king_bb = self.w_king_bb >> 2
+                    self.w_rook_bb = clear_bit(self.w_rook_bb, 0)
+                    self.w_rook_bb = set_bit(self.w_rook_bb, 2)
+                else:                       # Black
+                    self.b_king_bb = self.b_king_bb >> 2
+                    self.b_rook_bb = clear_bit(self.b_rook_bb, 56)
+                    self.b_rook_bb = set_bit(self.b_rook_bb, 58)
+
+            case 3: # Queen Side Castle
+                if move["piece"].isupper(): # White
+                    self.w_king_bb = self.w_king_bb << 2
+                    self.w_rook_bb = clear_bit(self.w_rook_bb, 7)
+                    self.w_rook_bb = set_bit(self.w_rook_bb, 4)
+                else:                       # Black
+                    self.b_king_bb = self.b_king_bb << 2
+                    self.b_rook_bb = clear_bit(self.b_rook_bb, 63)
+                    self.b_rook_bb = set_bit(self.b_rook_bb, 60)
+        
+            case 5: # En Passant Capture
+                if move["piece"] == 'P':
+                    self.w_pawn_bb = clear_bit(self.w_pawn_bb, move["start"])
+                    self.b_pawn_bb = clear_bit(self.b_pawn_bb, move["end"]-8)
+                    self.w_pawn_bb = set_bit(self.w_pawn_bb, move["end"])
+                else:
+                    self.b_pawn_bb = clear_bit(self.b_pawn_bb, move["start"])
+                    self.w_pawn_bb = clear_bit(self.w_pawn_bb, move["end"]+8)
+                    self.b_pawn_bb = set_bit(self.b_pawn_bb, move["end"])
+
+            case 8: # Quiet Knight Promotion
+                if move["piece"] == 'P':
+                    self.w_pawn_bb = clear_bit(self.w_pawn_bb, move["start"])
+                    self.w_knight_bb = set_bit(self.w_knight_bb, move["end"])
+                else:
+                    self.b_pawn_bb = clear_bit(self.b_pawn_bb, move["start"])
+                    self.b_knight_bb = set_bit(self.b_knight_bb, move["end"])
+
+            case 9: # Quiet Bishop Promotion
+                if move["piece"] == 'P':
+                    self.w_pawn_bb = clear_bit(self.w_pawn_bb, move["start"])
+                    self.w_bishop_bb = set_bit(self.w_bishop_bb, move["end"])
+                else:
+                    self.b_pawn_bb = clear_bit(self.b_pawn_bb, move["start"])
+                    self.b_bishop_bb = set_bit(self.b_bishop_bb, move["end"])
+
+            case 10: # Quiet Rook Promotion
+                if move["piece"] == 'P':
+                    self.w_pawn_bb = clear_bit(self.w_pawn_bb, move["start"])
+                    self.w_rook_bb = set_bit(self.w_rook_bb, move["end"])
+                else:
+                    self.b_pawn_bb = clear_bit(self.b_pawn_bb, move["start"])
+                    self.b_rook_bb = set_bit(self.b_rook_bb, move["end"])
+
+            case 11: # Quiet Queen Promotion:
+                if move["piece"] == 'P':
+                    self.w_pawn_bb = clear_bit(self.w_pawn_bb, move["start"])
+                    self.w_queen_bb = set_bit(self.w_queen_bb, move["end"])
+                else:
+                    self.b_pawn_bb = clear_bit(self.b_pawn_bb, move["start"])
+                    self.b_queen_bb = set_bit(self.b_queen_bb, move["end"])
+
+            case 12 | 13 | 14 | 15: # Capture Promotion
+                if move["piece"] == 'P':
+                    self.w_pawn_bb = clear_bit(self.w_pawn_bb, move["start"])
+                    self.w_pawn_bb = set_bit(self.w_pawn_bb, move["end"])
+
+                    end_index_mask = ~(1 << move["end"])
+                    self.b_pawn_bb &= end_index_mask
+                    self.b_knight_bb &= end_index_mask
+                    self.b_bishop_bb &= end_index_mask
+                    self.b_rook_bb &= end_index_mask
+                    self.b_queen_bb &= end_index_mask
+                    self.b_king_bb &= end_index_mask
+
+                    if move["code"] == 12:
+                        self.w_knight_bb = set_bit(self.w_knight_bb, move["end"])
+                    elif move["code"] == 13:
+                        self.w_bishop_bb = set_bit(self.w_bishop_bb, move["end"])
+                    elif move["code"] == 14:
+                        self.w_rook_bb = set_bit(self.w_rook_bb, move["end"])
+                    elif move["code"] == 15:
+                        self.w_queen_bb = set_bit(self.w_queen_bb, move["end"])
+                    
+                else: 
+                    self.b_pawn_bb = clear_bit(self.b_pawn_bb, move["start"])
+                    self.b_pawn_bb = set_bit(self.b_pawn_bb, move["end"])
+
+                    end_index_mask = ~(1 << move["end"])
+                    self.w_pawn_bb &= end_index_mask
+                    self.w_knight_bb &= end_index_mask
+                    self.w_bishop_bb &= end_index_mask
+                    self.w_rook_bb &= end_index_mask
+                    self.w_queen_bb &= end_index_mask
+                    self.w_king_bb &= end_index_mask
+
+                    if move["code"] == 12:
+                        self.b_knight_bb = set_bit(self.b_knight_bb, move["end"])
+                    elif move["code"] == 13:
+                        self.b_bishop_bb = set_bit(self.b_bishop_bb, move["end"])
+                    elif move["code"] == 14:
+                        self.b_rook_bb = set_bit(self.b_rook_bb, move["end"])
+                    elif move["code"] == 15:
+                        self.b_queen_bb = set_bit(self.b_queen_bb, move["end"])
+
+
+            case _:
+                print("invalid code brotha")
+        if move["piece"].lower() != 'p' and move["code"] != 4:
+            self.fifty_rule_counter += 1
+        else:
+            self.fifty_rule_counter = 0
+
+        self.move_stack.append(move)
+        
+        self._update_bitboards()

@@ -49,3 +49,21 @@ for start_index in range(64):
     for dir in [17, 15, 10, 6, -6, -10, -15, -17]:
         if 0 <= start_index + dir < 64 and (-2 <= (start_index+dir)//8 - start_index//8 <= 2) and (-2 <= (start_index+dir)%8 - start_index%8 <= 2):
             KNIGHT_ATTACKS[start_index] = set_bit(KNIGHT_ATTACKS[start_index], start_index + dir)
+
+
+
+# code	promotion	capture	special 1	special 0	kind of move
+# 0	    0	        0	    0	        0	        quiet moves
+# 1	    0	        0	    0	        1	        double pawn push
+# 2	    0	        0	    1	        0	        king castle
+# 3	    0	        0	    1	        1	        queen castle
+# 4	    0	        1	    0	        0	        captures
+# 5	    0	        1	    0	        1	        ep-capture
+# 8	    1	        0	    0	        0	        knight-promotion
+# 9	    1	        0	    0	        1	        bishop-promotion
+# 10	1	        0	    1	        0	        rook-promotion
+# 11	1	        0	    1	        1	        queen-promotion
+# 12	1	        1	    0	        0	        knight-promo capture
+# 13	1	        1	    0	        1	        bishop-promo capture
+# 14	1	        1	    1	        0	        rook-promo capture
+# 15	1	        1	    1	        1	        queen-promo capture
