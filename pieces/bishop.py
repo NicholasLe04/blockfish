@@ -1,5 +1,4 @@
 from bitboard_util import set_bit, index_of_LSB, index_of_MSB
-import math
 
 def _get_NW_bitboard(start_index):
     NW_ray = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
@@ -35,44 +34,46 @@ def _get_SE_bitboard(start_index):
 
 
 def bishop_attacks(start_index, all_pieces):
-    w_bishop_targets = 0
+    bishop_targets = 0
 
     # Northwest Ray 
     NW_ray = _get_NW_bitboard(start_index)
     blockers = NW_ray & all_pieces
     if blockers != 0:
         lsb_index = index_of_LSB(blockers)
-        w_bishop_targets |= (_get_NW_bitboard(lsb_index) ^ NW_ray)
+        bishop_targets |= (_get_NW_bitboard(lsb_index) ^ NW_ray)
     else:
-        w_bishop_targets |= NW_ray
+        bishop_targets |= NW_ray
     
     # Northeast Ray 
     NE_ray = _get_NE_bitboard(start_index)
     blockers = NE_ray & all_pieces
     if blockers != 0:
         lsb_index = index_of_LSB(blockers)
-        w_bishop_targets |= (_get_NE_bitboard(lsb_index) ^ NE_ray)
+        bishop_targets |= (_get_NE_bitboard(lsb_index) ^ NE_ray)
     else:
-        w_bishop_targets |= NE_ray
+        bishop_targets |= NE_ray
     
     # Southwest Ray 
     SW_ray = _get_SW_bitboard(start_index)
     blockers = SW_ray & all_pieces
     if blockers != 0:
         msb_index = index_of_MSB(blockers)
-        w_bishop_targets |= (_get_SW_bitboard(msb_index) ^ SW_ray)
+        bishop_targets |= (_get_SW_bitboard(msb_index) ^ SW_ray)
     else:
-        w_bishop_targets |= SW_ray
+        bishop_targets |= SW_ray
         
     # Southeast Ray 
     SE_ray = _get_SE_bitboard(start_index)
     blockers = SE_ray & all_pieces
     if blockers != 0:
         msb_index = index_of_MSB(blockers)
-        w_bishop_targets |= (_get_SE_bitboard(msb_index) ^ SE_ray)
+        bishop_targets |= (_get_SE_bitboard(msb_index) ^ SE_ray)
     else:
-        w_bishop_targets |= SE_ray
+        bishop_targets |= SE_ray
 
-    return w_bishop_targets
+    return bishop_targets
 
+def bishop_moves(start_index, friendly_pieces, all_pieces):
+    return bishop_attacks(start_index, all_pieces) & ~friendly_pieces
 

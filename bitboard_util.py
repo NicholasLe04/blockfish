@@ -21,4 +21,19 @@ def index_of_LSB(bitboard):
     return (bitboard&-bitboard).bit_length()-1
 
 def index_of_MSB(bitboard):
+    if bitboard == 0:
+        return -2
     return int(math.log2(bitboard))
+
+def bitscan(bitboard):
+    '''
+        Return a list with the index of every 1-bit from the right\n
+        bitboard: 001100011010111
+        bitscan(bitboard) -> [0,1,2,4,6,7,11,12]
+    '''
+    indices = []
+    for i in range(index_of_LSB(bitboard), index_of_MSB(bitboard)+1):
+        if get_bit(bitboard, i):
+            indices.append(i)
+
+    return indices

@@ -1,6 +1,5 @@
 from bitboard_util import set_bit, index_of_LSB, index_of_MSB
 
-import math
 
 def _get_N_bitboard(start_index):
     N_ray = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
@@ -31,40 +30,43 @@ def _get_E_bitboard(start_index):
 
 def rook_attacks(start_index, all_pieces):
     # North ray
-    w_rook_targets = 0
+    rook_targets = 0
     N_ray = _get_N_bitboard(start_index)
     blockers = N_ray & all_pieces
     if blockers != 0:
         lsb_index = index_of_LSB(blockers)
-        w_rook_targets |= (_get_N_bitboard(lsb_index) ^ N_ray)
+        rook_targets |= (_get_N_bitboard(lsb_index) ^ N_ray)
     else:
-        w_rook_targets |= N_ray
+        rook_targets |= N_ray
 
     # West ray
     W_ray = _get_W_bitboard(start_index)
     blockers = W_ray & all_pieces
     if blockers != 0:
         lsb_index = index_of_LSB(blockers)
-        w_rook_targets |= (_get_W_bitboard(lsb_index) ^ W_ray)
+        rook_targets |= (_get_W_bitboard(lsb_index) ^ W_ray)
     else:
-        w_rook_targets |= W_ray
+        rook_targets |= W_ray
 
     # South Ray
     S_ray = _get_S_bitboard(start_index)
     blockers = S_ray & all_pieces
     if blockers != 0:
         msb_index = index_of_MSB(blockers)
-        w_rook_targets |= (_get_S_bitboard(msb_index) ^ S_ray)
+        rook_targets |= (_get_S_bitboard(msb_index) ^ S_ray)
     else:
-        w_rook_targets |= S_ray
+        rook_targets |= S_ray
 
     # East Ray
     E_ray = _get_E_bitboard(start_index)
     blockers = E_ray & all_pieces
     if blockers != 0:
         msb_index = index_of_MSB(blockers)
-        w_rook_targets |= (_get_E_bitboard(msb_index) ^ E_ray)
+        rook_targets |= (_get_E_bitboard(msb_index) ^ E_ray)
     else:
-        w_rook_targets |= E_ray
+        rook_targets |= E_ray
 
-    return w_rook_targets
+    return rook_targets
+
+def rook_moves(start_index, friendly_pieces, all_pieces):
+    return rook_attacks(start_index, all_pieces) & ~friendly_pieces
