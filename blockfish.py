@@ -1,3 +1,4 @@
+import time
 from chess import Position
 
 import copy, math
@@ -57,4 +58,12 @@ def minimax(position:Position, depth:int, alpha, beta, maximizing_player):
         return min_eval, best_move
     
 b = Position()
-print(minimax(b, 3, -math.inf, math.inf, True))
+#b.from_FEN("8/1p4kp/2nq2p1/p1p3Q1/PnPpP2P/3P2PB/1P2Pr2/RN1K4 w - - 2 34")
+start = time.time()
+# print(minimax(b, 4, -math.inf, math.inf, True))
+#print(move_gen_test(b, 4, True))
+b.print_board()
+print(time.time() - start)
+# 0.6
+
+#  WORK ON MOVE ORDERING

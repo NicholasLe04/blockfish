@@ -33,7 +33,6 @@ W_QUEEN_CASTLE_CLEAR = int("00000000_00000000_00000000_00000000_00000000_0000000
 B_KING_CASTLE_CLEAR =  int("00000110_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
 B_QUEEN_CASTLE_CLEAR = int("01110000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
 
-KNIGHT_ATTACKS = {}
 
 PIECE_VALUES = { 
                 'P': 1, 
@@ -44,13 +43,105 @@ PIECE_VALUES = {
                 'K': 0, 
                 } # Per AlphaZero
 
+
+###################
+#   ATTACK MAPS
+###################
+
+def _get_NW_bitboard(start_index):
+    NW_ray = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
+    for i in range(start_index+9, 64, 9):
+        if abs(i//8 - (i-9)//8) != 1 or abs(i%8 - (i-9)%8) != 1:
+            break
+        NW_ray = set_bit(NW_ray, i)
+    return NW_ray
+
+def _get_NE_bitboard(start_index):
+    NE_ray = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
+    for i in range(start_index+7, 64, 7):
+        if abs(i//8 - (i-7)//8) != 1 or abs(i%8 - (i-7)%8) != 1:
+            break
+        NE_ray = set_bit(NE_ray, i)
+    return NE_ray
+
+def _get_SW_bitboard(start_index):
+    SW_ray = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
+    for i in range(start_index-7, -1, -7):
+        if abs(i//8 - (i+7)//8) != 1 or abs(i%8 - (i+7)%8) != 1:
+            break
+        SW_ray = set_bit(SW_ray, i)
+    return SW_ray
+
+def _get_SE_bitboard(start_index):
+    SE_ray = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
+    for i in range(start_index-9, -1, -9):
+        if abs(i//8 - (i+9)//8) != 1 or abs(i%8 - (i+9)%8) != 1:
+            break
+        SE_ray = set_bit(SE_ray, i)
+    return SE_ray
+
+
+def _get_N_bitboard(start_index):
+    N_ray = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
+    for i in range(start_index+8, 64, 8):
+        N_ray = set_bit(N_ray, i)
+    return N_ray
+
+def _get_W_bitboard(start_index):
+    W_ray = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
+    for i in range(start_index+1, start_index+8, 1):
+        if abs(i//8 - (i-1)//8) != 0:
+            break
+        W_ray = set_bit(W_ray, i)
+    return W_ray
+
+def _get_S_bitboard(start_index):
+    S_ray = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
+    for i in range(start_index-8, -1, -8):
+        S_ray = set_bit(S_ray, i)
+    return S_ray
+def _get_E_bitboard(start_index):
+    E_ray = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
+    for i in range(start_index-1, start_index-8, -1):
+        if abs(i//8 - (i+1)//8) != 0:
+            break
+        E_ray = set_bit(E_ray, i)
+    return E_ray
+
+
+KNIGHT_ATTACKS = {}
+
 for start_index in range(64):
     KNIGHT_ATTACKS[start_index] = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
     for dir in [17, 15, 10, 6, -6, -10, -15, -17]:
         if 0 <= start_index + dir < 64 and (-2 <= (start_index+dir)//8 - start_index//8 <= 2) and (-2 <= (start_index+dir)%8 - start_index%8 <= 2):
             KNIGHT_ATTACKS[start_index] = set_bit(KNIGHT_ATTACKS[start_index], start_index + dir)
 
+BISHOP_ATTACKS = { 
+                    "NW": {}, 
+                    "NE": {}, 
+                    "SE": {}, 
+                    "SW": {},
+                 }
 
+for start_index in range(64):
+    BISHOP_ATTACKS["NW"][start_index] = _get_NW_bitboard(start_index)
+    BISHOP_ATTACKS["NE"][start_index] = _get_NE_bitboard(start_index)
+    BISHOP_ATTACKS["SE"][start_index] = _get_SE_bitboard(start_index)
+    BISHOP_ATTACKS["SW"][start_index] = _get_SW_bitboard(start_index)
+
+ROOK_ATTACKS = { 
+                "N": {}, 
+                "E": {}, 
+                "S": {}, 
+                "W": {},
+             }
+
+for start_index in range(64):
+    ROOK_ATTACKS["N"][start_index] = _get_N_bitboard(start_index)
+    ROOK_ATTACKS["E"][start_index] = _get_E_bitboard(start_index)
+    ROOK_ATTACKS["S"][start_index] = _get_S_bitboard(start_index)
+    ROOK_ATTACKS["W"][start_index] = _get_W_bitboard(start_index)
 
 # code	promotion	capture	special 1	special 0	kind of move
 # 0	    0	        0	    0	        0	        quiet moves

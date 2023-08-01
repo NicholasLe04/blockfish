@@ -5,7 +5,7 @@ import pieces.rook as rook
 import pieces.queen as queen
 import pieces.king as king
 
-from bitboard_util import set_bit, get_bit, clear_bit, index_of_LSB, index_of_MSB, bitscan, bitboard_to_board
+from bitboard_util import set_bit, get_bit, clear_bit, index_of_LSB, index_of_MSB, bitscan
 from constants import PIECE_VALUES, POSITION_TO_INDEX, W_KING_CASTLE_CLEAR, W_QUEEN_CASTLE_CLEAR, B_KING_CASTLE_CLEAR, B_QUEEN_CASTLE_CLEAR
 
 import time
@@ -40,6 +40,44 @@ class Position():
         self.fifty_rule_counter = 0
         self.en_passant_square = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
         self.move_stack = []
+
+    def print_board(self):
+        piece_list = []
+        for i in range(64):
+            if get_bit(self.w_pawn_bb, i):
+                piece_list.append('♙')
+            elif get_bit(self.w_knight_bb, i):
+                piece_list.append('♘')
+            elif get_bit(self.w_bishop_bb, i):
+                piece_list.append('♗')
+            elif get_bit(self.w_rook_bb, i):
+                piece_list.append('♖')
+            elif get_bit(self.w_queen_bb, i):
+                piece_list.append('♕')
+            elif get_bit(self.w_king_bb, i):
+                piece_list.append('♔')
+
+            elif get_bit(self.b_pawn_bb, i):
+                piece_list.append('♟')
+            elif get_bit(self.b_knight_bb, i):
+                piece_list.append('♞')
+            elif get_bit(self.b_bishop_bb, i):
+                piece_list.append('♝')
+            elif get_bit(self.b_rook_bb, i):
+                piece_list.append('♜')
+            elif get_bit(self.b_queen_bb, i):
+                piece_list.append('♛')
+            elif get_bit(self.b_king_bb, i):
+                piece_list.append('♚')
+            else:
+                piece_list.append(' ')
+
+        row = 8
+        for i in range(0, 64, 8):
+            print("+---+---+---+---+---+---+---+---+")
+            print(f"| {piece_list[i]} | {piece_list[i+1]} | {piece_list[i+2]} | {piece_list[i+3]} | {piece_list[i+4]} | {piece_list[i+5]} | {piece_list[i+6]} | {piece_list[i+7]} | {row}")
+            row -= 1
+        print("+---+---+---+---+---+---+---+---+\n  a   b   c   d   e   f   g   h  ")
 
     def _update_bitboards(self):
         self.w_pieces_bb = self.w_pawn_bb | self.w_knight_bb | self.w_bishop_bb | self.w_rook_bb | self.w_queen_bb | self.w_king_bb
@@ -204,8 +242,9 @@ class Position():
         if white:
             for idx in bitscan(self.w_pieces_bb):
                 if get_bit(self.w_pieces_bb, idx):
+                    move_mask = (1 << idx)
                     # Pawn Move Generation
-                    if self.w_pawn_bb & (1 << idx):
+                    if self.w_pawn_bb & move_mask:
                         row, col = idx // 8, idx % 8  
                         if row < 6:
                             if not get_bit(self.all_pieces_bb, idx + 8):
@@ -241,35 +280,35 @@ class Position():
                                 moves.append({"piece": 'P', "start": idx, "end": idx + 9, "code": 14})
                                 moves.append({"piece": 'P', "start": idx, "end": idx + 9, "code": 15})
                     # Knight Move Generation
-                    elif self.w_knight_bb & (1 << idx):
+                    elif self.w_knight_bb & move_mask:
                         for end_idx in bitscan(knight.knight_moves(idx, self.w_pieces_bb)):
                             if get_bit(self.b_pieces_bb, end_idx):
                                 moves.append({"piece": 'N', "start": idx, "end": end_idx, "code": 4})
                             else:
                                 moves.append({"piece": 'N', "start": idx, "end": end_idx, "code": 0})
                     # Bishop Move Generation
-                    elif self.w_bishop_bb & (1 << idx):
+                    elif self.w_bishop_bb & move_mask:
                         for end_idx in bitscan(bishop.bishop_moves(idx, self.w_pieces_bb, self.all_pieces_bb)):
                             if get_bit(self.b_pieces_bb, end_idx):
                                 moves.append({"piece": 'B', "start": idx, "end": end_idx, "code": 4})
                             else:
                                 moves.append({"piece": 'B', "start": idx, "end": end_idx, "code": 0})
                     # Rook Move Generation
-                    elif self.w_rook_bb & (1 << idx):
+                    elif self.w_rook_bb & move_mask:
                         for end_idx in bitscan(rook.rook_moves(idx, self.w_pieces_bb, self.all_pieces_bb)):
                             if get_bit(self.b_pieces_bb, end_idx):
                                 moves.append({"piece": 'R', "start": idx, "end": end_idx, "code": 4})
                             else:
                                 moves.append({"piece": 'R', "start": idx, "end": end_idx, "code": 0})
                     # Queen Move Generation
-                    elif self.w_queen_bb & (1 << idx):
+                    elif self.w_queen_bb & move_mask:
                         for end_idx in bitscan(queen.queen_moves(idx, self.w_pieces_bb, self.all_pieces_bb)):
                             if get_bit(self.b_pieces_bb, end_idx):
                                 moves.append({"piece": 'Q', "start": idx, "end": end_idx, "code": 4})
                             else:
                                 moves.append({"piece": 'Q', "start": idx, "end": end_idx, "code": 0})
                     # King Move Generation
-                    elif self.w_king_bb & (1 << idx):
+                    elif self.w_king_bb & move_mask:
                         black_capturing_bb = self.get_attacking_bitboard(False)
                         for end_idx in bitscan(king.king_moves(idx, self.w_pieces_bb, black_capturing_bb)):
                             # Quiet moves and captures
@@ -278,16 +317,17 @@ class Position():
                             else:
                                 moves.append({"piece": 'K', "start": idx, "end": end_idx, "code": 0})
                             # Castle
-                            if self.castle_availability['K'] and not (W_KING_CASTLE_CLEAR & self.all_pieces_bb):
-                                moves.append({"piece": 'K', "code": 2})
-                            if self.castle_availability['Q'] and not (W_QUEEN_CASTLE_CLEAR & self.all_pieces_bb):
-                                moves.append({"piece": 'K', "code": 3})
+                        if self.castle_availability['K'] and not (W_KING_CASTLE_CLEAR & self.all_pieces_bb) and (get_bit(self.w_rook_bb, 0)):
+                            moves.append({"piece": 'K', "code": 2})
+                        if self.castle_availability['Q'] and not (W_QUEEN_CASTLE_CLEAR & self.all_pieces_bb) and (get_bit(self.w_rook_bb, 7)):
+                            moves.append({"piece": 'K', "code": 3})
 
         else:
             for idx in bitscan(self.b_pieces_bb):
                 if get_bit(self.b_pieces_bb, idx):
+                    move_mask = (1 << idx)
                     # Pawn Move Generation
-                    if self.b_pawn_bb & (1 << idx):
+                    if self.b_pawn_bb & move_mask:
                         row, col = idx // 8, idx % 8  
                         if row > 1:
                             if not get_bit(self.all_pieces_bb, idx - 8):
@@ -323,35 +363,35 @@ class Position():
                                 moves.append({"piece": 'p', "start": idx, "end": idx - 9, "code": 14})
                                 moves.append({"piece": 'p', "start": idx, "end": idx - 9, "code": 15})
                     # Knight Move Generation
-                    elif self.b_knight_bb & (1 << idx):
+                    elif self.b_knight_bb & move_mask:
                         for end_idx in bitscan(knight.knight_moves(idx, self.b_pieces_bb)):
                             if get_bit(self.w_pieces_bb, end_idx):
                                 moves.append({"piece": 'n', "start": idx, "end": end_idx, "code": 4})
                             else:
                                 moves.append({"piece": 'n', "start": idx, "end": end_idx, "code": 0})
                     # Bishop Move Generation
-                    elif self.b_bishop_bb & (1 << idx):
+                    elif self.b_bishop_bb & move_mask:
                         for end_idx in bitscan(bishop.bishop_moves(idx, self.b_pieces_bb, self.all_pieces_bb)):
                             if get_bit(self.w_pieces_bb, end_idx):
                                 moves.append({"piece": 'b', "start": idx, "end": end_idx, "code": 4})
                             else:
                                 moves.append({"piece": 'b', "start": idx, "end": end_idx, "code": 0})            
                     # Rook Move Generation
-                    elif self.b_rook_bb & (1 << idx):
+                    elif self.b_rook_bb & move_mask:
                         for end_idx in bitscan(rook.rook_moves(idx, self.b_pieces_bb, self.all_pieces_bb)):
                             if get_bit(self.w_pieces_bb, end_idx):
                                 moves.append({"piece": 'r', "start": idx, "end": end_idx, "code": 4})
                             else:
                                 moves.append({"piece": 'r', "start": idx, "end": end_idx, "code": 0})
                     # Queen Move Generation
-                    elif self.b_queen_bb & (1 << idx):
+                    elif self.b_queen_bb & move_mask:
                         for end_idx in bitscan(queen.queen_moves(idx, self.b_pieces_bb, self.all_pieces_bb)):
                             if get_bit(self.w_pieces_bb, end_idx):
                                 moves.append({"piece": 'q', "start": idx, "end": end_idx, "code": 4})
                             else:
                                 moves.append({"piece": 'q', "start": idx, "end": end_idx, "code": 0})
                     # King Move Generation
-                    elif self.b_king_bb & (1 << idx):
+                    elif self.b_king_bb & move_mask:
                         white_capturing_bb = self.get_attacking_bitboard(True)
                         for end_idx in bitscan(king.king_moves(idx, self.b_pieces_bb, white_capturing_bb)):
                             # Quiet moves and captures
@@ -359,18 +399,23 @@ class Position():
                                 moves.append({"piece": 'k', "start": idx, "end": end_idx, "code": 4})
                             else:
                                 moves.append({"piece": 'k', "start": idx, "end": end_idx, "code": 0})
-                            # Castle
-                            if self.castle_availability['k'] and not (B_KING_CASTLE_CLEAR & self.all_pieces_bb):
-                                moves.append({"piece": 'k', "code": 2})
-                            if self.castle_availability['q'] and not (B_QUEEN_CASTLE_CLEAR & self.all_pieces_bb):
-                                moves.append({"piece": 'k', "code": 3})
+                        # Castle
+                        if self.castle_availability['k'] and not (B_KING_CASTLE_CLEAR & self.all_pieces_bb) and (get_bit(self.b_rook_bb, 56)):
+                            moves.append({"piece": 'k', "code": 2})
+                        if self.castle_availability['q'] and not (B_QUEEN_CASTLE_CLEAR & self.all_pieces_bb) and (get_bit(self.b_rook_bb, 63)):
+                            moves.append({"piece": 'k', "code": 3})
         
+        # Ensure king not in check after move
         legal_moves = []
         for move in moves:
             sim_board = copy.deepcopy(self)
             sim_board.make_move(move)
             if not sim_board.in_check(white):
-                legal_moves.append(move)
+                # Order moves with captures first
+                if move["code"] == 4 or 8 <= move["code"] <= 12:
+                    legal_moves.insert(0, move)
+                else:
+                    legal_moves.append(move)
         
         return legal_moves
 
@@ -421,39 +466,51 @@ class Position():
                     case 'P':
                         self.w_pawn_bb = clear_bit(self.w_pawn_bb, move["start"])
                         self.w_pawn_bb = set_bit(self.w_pawn_bb, move["end"])
+                        # self.w_pawn_bb ^= ((2**move["start"]) + (2**move["end"]))
                     case 'N':
                         self.w_knight_bb = clear_bit(self.w_knight_bb, move["start"])
                         self.w_knight_bb = set_bit(self.w_knight_bb, move["end"])
+                        # self.w_knight_bb ^= ((2**move["start"]) + (2**move["end"]))
                     case 'B':
                         self.w_bishop_bb = clear_bit(self.w_bishop_bb, move["start"])
                         self.w_bishop_bb = set_bit(self.w_bishop_bb, move["end"])
+                        # self.w_bishop_bb ^= ((2**move["start"]) + (2**move["end"]))
                     case 'R':
                         self.w_rook_bb = clear_bit(self.w_rook_bb, move["start"])
                         self.w_rook_bb = set_bit(self.w_rook_bb, move["end"])
+                        # self.w_rook_bb ^= ((2**move["start"]) + (2**move["end"]))
                     case 'Q':
                         self.w_queen_bb = clear_bit(self.w_queen_bb, move["start"])
                         self.w_queen_bb = set_bit(self.w_queen_bb, move["end"])
+                        # self.w_queen_bb ^= ((2**move["start"]) + (2**move["end"]))
                     case 'K':
                         self.w_king_bb = clear_bit(self.w_king_bb, move["start"])
                         self.w_king_bb = set_bit(self.w_king_bb, move["end"])
+                        # self.w_king_bb ^= ((2**move["start"]) + (2**move["end"]))
                     case 'p':
                         self.b_pawn_bb = clear_bit(self.b_pawn_bb, move["start"])
                         self.b_pawn_bb = set_bit(self.b_pawn_bb, move["end"])
+                        # self.b_pawn_bb ^= ((2**move["start"]) + (2**move["end"]))
                     case 'n':
                         self.b_knight_bb = clear_bit(self.b_knight_bb, move["start"])
                         self.b_knight_bb = set_bit(self.b_knight_bb, move["end"])
+                        # self.b_knight_bb ^= ((2**move["start"]) + (2**move["end"]))
                     case 'b':
                         self.b_bishop_bb = clear_bit(self.b_bishop_bb, move["start"])
                         self.b_bishop_bb = set_bit(self.b_bishop_bb, move["end"])
+                        # self.b_bishop_bb ^= ((2**move["start"]) + (2**move["end"]))
                     case 'r':
                         self.b_rook_bb = clear_bit(self.b_rook_bb, move["start"])
                         self.b_rook_bb = set_bit(self.b_rook_bb, move["end"])
+                        # self.b_rook_bb ^= ((2**move["start"]) + (2**move["end"]))
                     case 'q':
                         self.b_queen_bb = clear_bit(self.b_queen_bb, move["start"])
                         self.b_queen_bb = set_bit(self.b_queen_bb, move["end"])
+                        # self.b_queen_bb ^= ((2**move["start"]) + (2**move["end"]))
                     case 'k':
                         self.b_king_bb = clear_bit(self.b_king_bb, move["start"])
                         self.b_king_bb = set_bit(self.b_king_bb, move["end"])
+                        # self.b_king_bb ^= ((2**move["start"]) + (2**move["end"]))
                     
                 if move["code"] == 4:
                     if move["piece"].isupper():
