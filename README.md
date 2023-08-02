@@ -11,8 +11,9 @@ Basically, it assumes both players will choose the best move for themselves. Usi
   what has already been searched (for example: it finds a position with <=1 evaluation when it has found another position with a <= 5 evaluation) it will prune that part of the tree,
   reducing the amount of searches.
 - Move Ordering - In order to prune as much as possible, it is important to search the best moves first. A very simple approach Blockfish takes is by placing captures ahead of quiet moves in the move ordering.
+- Zobrist Hashing - Use Zobrist Hashing to store the current state of a board in a bitstring. This allows easier unmoves by easily loading previous states.
+- Transposition Table / Memoization - The algorithm can store a position's evaluation and best move, using its Zobrist Hash as a key, in a transposition table so that if it runs into that position again, it can simply search it in the table.
+
 
 ### To-Do
-- Switch from using deepcopies for simulating moves to using move-unmoves
 - Better move ordering (MVV-LVA)
-- Transposition Table / Memoization
