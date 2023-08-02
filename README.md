@@ -17,3 +17,4 @@ Basically, it assumes both players will choose the best move for themselves. Usi
 
 ### To-Do
 - Better move ordering (MVV-LVA)
+- Instead of having 12 different bitboard variables that need to be scanned through each time, create a dictionary for easy bitboard lookup.
