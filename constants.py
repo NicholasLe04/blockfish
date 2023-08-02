@@ -1,4 +1,13 @@
 from bitboard_util import set_bit
+import uuid
+
+# Zobrist Hashing Table
+ZOBRIST_HASH_TABLE = []
+
+for cell in range(64):
+    ZOBRIST_HASH_TABLE.append([])
+    for piece in range(12):
+        ZOBRIST_HASH_TABLE[cell].append(uuid.uuid1().int>>64)
 
 INDEX_TO_POSITION = {
        63: 'a8', 62: 'b8', 61: 'c8', 60: 'd8', 59: 'e8', 58: 'f8', 57: 'g8', 56: 'h8',
@@ -21,6 +30,7 @@ POSITION_TO_INDEX  = {
        'a2': 15, 'b2': 14, 'c2': 13, 'd2': 12, 'e2': 11, 'f2': 10, 'g2': 9 , 'h2': 8 ,
        'a1':  7, 'b1': 6 , 'c1': 5 , 'd1': 4 , 'e1': 3 , 'f1': 2 , 'g1': 1 , 'h1': 0 
    }
+
 EXCLUDE_A_FILE = 0x7F7F7F7F7F7F7F7F         # 01111111_01111111_01111111_01111111_01111111_01111111_01111111_01111111
 EXCLUDE_H_FILE = 0xFEFEFEFEFEFEFEFE         # 11111110_11111110_11111110_11111110_11111110_11111110_11111110_11111110
 
