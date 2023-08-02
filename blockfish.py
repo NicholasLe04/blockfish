@@ -58,12 +58,14 @@ def minimax(position:Position, depth:int, alpha, beta, maximizing_player):
         return min_eval, best_move
     
 b = Position()
-#b.from_FEN("8/1p4kp/2nq2p1/p1p3Q1/PnPpP2P/3P2PB/1P2Pr2/RN1K4 w - - 2 34")
-start = time.time()
-# print(minimax(b, 4, -math.inf, math.inf, True))
-#print(move_gen_test(b, 4, True))
-b.print_board()
-print(time.time() - start)
-# 0.6
+while True:
+    fen = input("FEN: ")
+    depth = int(input("Depth: "))
+    b.from_FEN(fen)
+    b.print_board()
+    start = time.time()
+    print(minimax(b, depth, -math.inf, math.inf, True))
+    print(f"Compute Time: {time.time() - start}")
 
 #  WORK ON MOVE ORDERING
+#  8/8/8/1Pk5/8/8/2P3K1/8 w - - 0 0

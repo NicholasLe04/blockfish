@@ -15,22 +15,22 @@ import copy
 class Position():
 
 
-    def __init__(self):      # Top of board                                                   bottom of board
-        self.w_pawn_bb =     int("00000000_00000000_00000000_00000000_00000000_00000000_11111111_00000000", 2)
-        self.w_knight_bb =   int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_01000010", 2)
-        self.w_bishop_bb =   int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00100100", 2)
-        self.w_rook_bb =     int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_10000001", 2)
-        self.w_queen_bb =    int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000", 2)
-        self.w_king_bb =     int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000", 2)
-        self.w_pieces_bb = self.w_pawn_bb | self.w_knight_bb | self.w_bishop_bb | self.w_rook_bb | self.w_queen_bb | self.w_king_bb
+    def __init__(self):                          # Top of board                                            bottom of board
+        self.w_pawn_bb    =  0xFF00              # 00000000_00000000_00000000_00000000_00000000_00000000_11111111_00000000
+        self.w_knight_bb  =  0x42                # 00000000_00000000_00000000_00000000_00000000_00000000_00000000_01000010
+        self.w_bishop_bb  =  0x24                # 00000000_00000000_00000000_00000000_00000000_00000000_00000000_00100100
+        self.w_rook_bb    =  0x81                # 00000000_00000000_00000000_00000000_00000000_00000000_00000000_10000001
+        self.w_queen_bb   =  0x10                # 00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000
+        self.w_king_bb    =  0x08                # 00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000
+        self.w_pieces_bb  =  self.w_pawn_bb | self.w_knight_bb | self.w_bishop_bb | self.w_rook_bb | self.w_queen_bb | self.w_king_bb
 
-        self.b_pawn_bb =     int("00000000_11111111_00000000_00000000_00000000_00000000_00000000_00000000", 2)
-        self.b_knight_bb =   int("01000010_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
-        self.b_bishop_bb =   int("00100100_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
-        self.b_rook_bb =     int("10000001_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
-        self.b_queen_bb =    int("00010000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
-        self.b_king_bb =     int("00001000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
-        self.b_pieces_bb = self.b_pawn_bb | self.b_knight_bb | self.b_bishop_bb | self.b_rook_bb | self.b_queen_bb | self.b_king_bb
+        self.b_pawn_bb    =  0xFF000000000000    # 00000000_11111111_00000000_00000000_00000000_00000000_00000000_00000000
+        self.b_knight_bb  =  0x4200000000000000  # 01000010_00000000_00000000_00000000_00000000_00000000_00000000_00000000
+        self.b_bishop_bb  =  0x2400000000000000  # 00100100_00000000_00000000_00000000_00000000_00000000_00000000_00000000
+        self.b_rook_bb    =  0x8100000000000000  # 10000001_00000000_00000000_00000000_00000000_00000000_00000000_00000000
+        self.b_queen_bb   =  0x1000000000000000  # 00010000_00000000_00000000_00000000_00000000_00000000_00000000_00000000
+        self.b_king_bb    =  0x0800000000000000  # 00001000_00000000_00000000_00000000_00000000_00000000_00000000_00000000
+        self.b_pieces_bb  =  self.b_pawn_bb | self.b_knight_bb | self.b_bishop_bb | self.b_rook_bb | self.b_queen_bb | self.b_king_bb
 
         self.all_pieces_bb = (self.w_pawn_bb | self.w_knight_bb | self.w_bishop_bb | self.w_rook_bb | self.w_queen_bb | self.w_king_bb |
                                self.b_pawn_bb | self.b_knight_bb | self.b_bishop_bb | self.b_rook_bb | self.b_queen_bb | self.b_king_bb)
@@ -38,12 +38,12 @@ class Position():
         self.white_side = True
         self.castle_availability = { "K": True, "Q": True, "k": True, "q": True }
         self.fifty_rule_counter = 0
-        self.en_passant_square = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
+        self.en_passant_square = 0               # 00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000
         self.move_stack = []
 
     def print_board(self):
         piece_list = []
-        for i in range(64):
+        for i in range(63, -1, -1):
             if get_bit(self.w_pawn_bb, i):
                 piece_list.append('♙')
             elif get_bit(self.w_knight_bb, i):
@@ -407,17 +407,20 @@ class Position():
         
         # Ensure king not in check after move
         legal_moves = []
+        captures = { "p":[], "n":[], "b":[], "r":[], "q":[], "k":[], }
         for move in moves:
             sim_board = copy.deepcopy(self)
             sim_board.make_move(move)
             if not sim_board.in_check(white):
                 # Order moves with captures first
                 if move["code"] == 4 or 8 <= move["code"] <= 12:
-                    legal_moves.insert(0, move)
+                    captures[move["piece"].lower()].append(move)
+                    #legal_moves.insert(0, move)
                 else:
                     legal_moves.append(move)
         
-        return legal_moves
+        return captures["p"] + captures["n"] + captures["b"] + captures["r"] + captures["q"] + captures["k"] + legal_moves
+        #return legal_moves
 
     def in_check(self, white=True) -> bool:
         if white:
@@ -606,7 +609,6 @@ class Position():
             case 12 | 13 | 14 | 15: # Capture Promotion
                 if move["piece"] == 'P':
                     self.w_pawn_bb = clear_bit(self.w_pawn_bb, move["start"])
-                    self.w_pawn_bb = set_bit(self.w_pawn_bb, move["end"])
 
                     end_index_mask = ~(1 << move["end"])
                     self.b_pawn_bb &= end_index_mask
@@ -627,7 +629,6 @@ class Position():
                     
                 else: 
                     self.b_pawn_bb = clear_bit(self.b_pawn_bb, move["start"])
-                    self.b_pawn_bb = set_bit(self.b_pawn_bb, move["end"])
 
                     end_index_mask = ~(1 << move["end"])
                     self.w_pawn_bb &= end_index_mask

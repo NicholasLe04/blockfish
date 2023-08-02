@@ -1,42 +1,42 @@
 from bitboard_util import index_of_LSB, index_of_MSB
-from constants import BISHOP_ATTACKS
+from constants import BISHOP_TARGETS
 
 def bishop_attacks(start_index, all_pieces):
     bishop_targets = 0
 
     # Northwest Ray 
-    NW_ray = BISHOP_ATTACKS['NW'][start_index]
+    NW_ray = BISHOP_TARGETS['NW'][start_index]
     blockers = NW_ray & all_pieces
     if blockers != 0:
         lsb_index = index_of_LSB(blockers)
-        bishop_targets |= (BISHOP_ATTACKS['NW'][lsb_index] ^ NW_ray)
+        bishop_targets |= (BISHOP_TARGETS['NW'][lsb_index] ^ NW_ray)
     else:
         bishop_targets |= NW_ray
     
     # Northeast Ray 
-    NE_ray = BISHOP_ATTACKS['NE'][start_index]
+    NE_ray = BISHOP_TARGETS['NE'][start_index]
     blockers = NE_ray & all_pieces
     if blockers != 0:
         lsb_index = index_of_LSB(blockers)
-        bishop_targets |= (BISHOP_ATTACKS['NE'][lsb_index] ^ NE_ray)
+        bishop_targets |= (BISHOP_TARGETS['NE'][lsb_index] ^ NE_ray)
     else:
         bishop_targets |= NE_ray
     
     # Southwest Ray 
-    SW_ray = BISHOP_ATTACKS['SW'][start_index]
+    SW_ray = BISHOP_TARGETS['SW'][start_index]
     blockers = SW_ray & all_pieces
     if blockers != 0:
         msb_index = index_of_MSB(blockers)
-        bishop_targets |= (BISHOP_ATTACKS['SW'][msb_index] ^ SW_ray)
+        bishop_targets |= (BISHOP_TARGETS['SW'][msb_index] ^ SW_ray)
     else:
         bishop_targets |= SW_ray
         
     # Southeast Ray 
-    SE_ray = BISHOP_ATTACKS['SE'][start_index]
+    SE_ray = BISHOP_TARGETS['SE'][start_index]
     blockers = SE_ray & all_pieces
     if blockers != 0:
         msb_index = index_of_MSB(blockers)
-        bishop_targets |= (BISHOP_ATTACKS['SE'][msb_index] ^ SE_ray)
+        bishop_targets |= (BISHOP_TARGETS['SE'][msb_index] ^ SE_ray)
     else:
         bishop_targets |= SE_ray
 
