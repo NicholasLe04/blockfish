@@ -2,7 +2,7 @@
 stockfish if it was written by someone REALLY dumb
 
 # How Blockfish blockfishes
-Like most basic chess engines, it uses the minimax algorithm (![Epic video by Sebastian Lague](https://www.youtube.com/watch?v=l-hh51ncgDI))
+Like most basic chess engines, it uses the minimax algorithm ([Epic video by Sebastian Lague](https://www.youtube.com/watch?v=l-hh51ncgDI))
 Basically, it assumes both players will choose the best move for themselves. Using that, it searches through every possible position to a given depth assuming white will choose the move with the greatest evaluation and black will choose the move with the least evaluation. It then chooses the move which will result in the best material evaluation.
 
 ## Optimizations 
