@@ -8,10 +8,6 @@ import pieces.king as king
 from bitboard_util import set_bit, get_bit, clear_bit, index_of_LSB, index_of_MSB, bitscan
 from constants import PIECE_VALUES, POSITION_TO_INDEX, W_KING_CASTLE_CLEAR, W_QUEEN_CASTLE_CLEAR, B_KING_CASTLE_CLEAR, B_QUEEN_CASTLE_CLEAR, ZOBRIST_HASH_TABLE
 
-import time
-import copy
-
-
 class Position():
 
 
@@ -474,15 +470,16 @@ class Position():
         legal_moves = []
         captures = { "p":[], "n":[], "b":[], "r":[], "q":[], "k":[], }
         for move in moves:
-            sim_board = copy.deepcopy(self)
-            sim_board.make_move(move)
-            if not sim_board.in_check(white):
+            hash = self.zobrist_hash
+            self.make_move(move)
+            if not self.in_check(white):
                 # Order moves with captures first
                 if move["code"] == 4 or 8 <= move["code"] <= 12:
                     captures[move["piece"].lower()].append(move)
                     #legal_moves.insert(0, move)
                 else:
                     legal_moves.append(move)
+            self.unmake_move(move, hash)
         
         return captures["p"] + captures["n"] + captures["b"] + captures["r"] + captures["q"] + captures["k"] + legal_moves
         #return legal_moves
@@ -497,10 +494,11 @@ class Position():
         if self.in_check():
             moves = self.get_legal_moves(white)
             for move in moves:
-                sim_board = copy.deepcopy(self)
-                sim_board.make_move(move)
-                if not sim_board.in_check(white):
+                hash = self.zobrist_hash
+                self.make_move(move)
+                if not self.in_check(white):
                     return False
+                self.unmake_move(move, hash)
             return True
         return False
 
