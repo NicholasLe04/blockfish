@@ -39,11 +39,12 @@ def minimax(position:Position, depth:int, alpha, beta, maximizing_player):
             max_eval = -math.inf-1
             moves = position.get_legal_moves()
             for move in moves:
-                sim_board = copy.deepcopy(position)
-                sim_board.make_move(move)
-                eval, _ = minimax(sim_board, depth-1, alpha, beta, False)
+                hash = position.zobrist_hash
+                position.make_move(move)
+                eval, _ = minimax(position, depth-1, alpha, beta, False)
+                position.unmake_move(move, hash)
                 if move["code"] != 2 and move["code"] != 3:
-                    eval += GAME_HEAT_MAP[move["piece"]][move["end"]]
+                    eval += GAME_HEAT_MAP[move["piece"]][63-move["end"]]
                 if eval > max_eval:
                     max_eval = eval
                     best_move = move
@@ -60,11 +61,12 @@ def minimax(position:Position, depth:int, alpha, beta, maximizing_player):
             min_eval = math.inf+1
             enemy_moves = position.get_legal_moves(False)
             for enemy_move in enemy_moves:
-                sim_board = copy.deepcopy(position)
-                sim_board.make_move(enemy_move)
-                eval, _ = minimax(sim_board, depth-1, alpha, beta, True)
+                hash = position.zobrist_hash
+                position.make_move(enemy_move)
+                eval, _ = minimax(position, depth-1, alpha, beta, True)
+                position.unmake_move(enemy_move, hash)
                 if enemy_move["code"] != 2 and enemy_move["code"] != 3:
-                    eval += GAME_HEAT_MAP[enemy_move["piece"]][enemy_move["end"]]
+                    eval += GAME_HEAT_MAP[enemy_move["piece"]][63-enemy_move["end"]]
                 if eval < min_eval:
                     min_eval = eval
                     best_move = enemy_move
@@ -75,17 +77,17 @@ def minimax(position:Position, depth:int, alpha, beta, maximizing_player):
             return min_eval, best_move
     
 b = Position()
-
-# depth = int(input("Depth: "))
-# while True:
-#     b.print_board()
-#     start = time.time()
-#     _, move = minimax(b, depth, -math.inf, math.inf, True)
-#     b.make_move(move)
-#     print(f"Compute Time: {time.time() - start}")
-#     b.print_board()
-#     piece = input("piece: ")
-#     start = POSITION_TO_INDEX[(input("start: "))]
-#     end = POSITION_TO_INDEX[(input("end: "))]
-#     code = int(input("code: "))
-#     b.make_move({ "piece": piece, "start": start, "end": end, "captured": b._piece_at_index(end),"code": code })
+b.from_FEN("r1bqk2r/ppp2pp1/2n1p2p/3p4/1b1P1Bn1/4Q3/PPP1PPPP/RN1K1BNR w kq - 0 0")
+depth = int(input("Depth: "))
+while True:
+    b.print_board()
+    start = time.time()
+    _, move = minimax(b, depth, -math.inf, math.inf, True)
+    b.make_move(move)
+    print(f"Compute Time: {time.time() - start}")
+    b.print_board()
+    piece = input("piece: ")
+    start = POSITION_TO_INDEX[(input("start: "))]
+    end = POSITION_TO_INDEX[(input("end: "))]
+    code = int(input("code: "))
+    b.make_move({ "piece": piece, "start": start, "end": end, "captured": b._piece_at_index(end),"code": code })

@@ -513,7 +513,7 @@ class Position():
         last_move_idx = len(self.move_stack)-1
         if last_move_idx < 6:
             return False
-        if (self.move_stack[last_move_idx] == self.move_stack[last_move_idx-2] == self.move_stack[last_move_idx[-4]]) and (self.move_stack[last_move_idx-1] == self.move_stack[last_move_idx-3] == self.move_stack[last_move_idx[-5]]):
+        if (self.move_stack[last_move_idx] == self.move_stack[last_move_idx-2] == self.move_stack[last_move_idx-4]) and (self.move_stack[last_move_idx-1] == self.move_stack[last_move_idx-3] == self.move_stack[last_move_idx-5]):
             return True
         else:
             return False
