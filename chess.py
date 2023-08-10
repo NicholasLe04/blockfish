@@ -42,7 +42,7 @@ class Position():
         self.en_passant_square = None               
         self.move_stack = []
 
-        self.zobrist_hash = (self.en_passant_square << 69) | (self.white_side << 68) | (self.compute_castle_bitstring() << 64) | (self.compute_zobrist_hash())
+        self.zobrist_hash = (self.white_side << 68) | (self.compute_castle_bitstring() << 64) | (self.compute_zobrist_hash())
 
     def compute_zobrist_hash(self):
         hash = 0
