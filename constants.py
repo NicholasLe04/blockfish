@@ -52,7 +52,20 @@ PIECE_VALUES = {
                 'K': 0, 
                 } # Per AlphaZero
 
-
+PIECE_TO_INDEX = {
+                    'P': 0,
+                    'N': 1,
+                    'B': 2,
+                    'R': 3,
+                    'Q': 4,
+                    'K': 5,
+                    'p': 6,
+                    'n': 7,
+                    'b': 8,
+                    'r': 9,
+                    'q': 10,
+                    'k': 11,
+}
 
 GAME_HEAT_MAP =   {
                             'P': [

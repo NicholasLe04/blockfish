@@ -1,4 +1,5 @@
 from bitboard_util import set_bit
+
 def king_targets(start_index):
     king_targets_bb = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)
     
@@ -9,5 +10,5 @@ def king_targets(start_index):
 
     return king_targets_bb
 
-def king_moves(start_index, friendly_pieces, enemy_attacking):
-    return king_targets(start_index) & ~friendly_pieces & ~enemy_attacking
+def king_moves(start_index, friendly_pieces):
+    return king_targets(start_index) & ~friendly_pieces
