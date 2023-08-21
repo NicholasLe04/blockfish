@@ -1,4 +1,4 @@
-from bitboard_util import set_bit
+from engine.bitboard_util import set_bit
 
 def king_targets(start_index):
     king_targets_bb = int("00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000", 2)

@@ -1,4 +1,4 @@
-from constants import RANK_4, RANK_5, EXCLUDE_A_FILE, EXCLUDE_H_FILE
+from engine.constants import RANK_4, RANK_5, EXCLUDE_A_FILE, EXCLUDE_H_FILE
 
 # White pushes
 def w_pawn_single_push_targets(w_pawn_bb, all_pieces_bb):

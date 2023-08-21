@@ -1,4 +1,4 @@
-from bitboard_util import set_bit
+from engine.bitboard_util import set_bit
 import uuid
 
 # Zobrist Hashing Table

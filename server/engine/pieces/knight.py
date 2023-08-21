@@ -1,5 +1,5 @@
-from constants import KNIGHT_TARGETS
-from bitboard_util import get_bit
+from engine.constants import KNIGHT_TARGETS
+from engine.bitboard_util import get_bit
 
 def knight_attacks(start_index, ):
     return (KNIGHT_TARGETS[start_index])

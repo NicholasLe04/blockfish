@@ -1,5 +1,5 @@
-from bitboard_util import index_of_LSB, index_of_MSB
-from constants import BISHOP_TARGETS
+from engine.bitboard_util import index_of_LSB, index_of_MSB
+from engine.constants import BISHOP_TARGETS
 
 def bishop_attacks(start_index, all_pieces):
     bishop_targets = 0

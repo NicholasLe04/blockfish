@@ -1,12 +1,12 @@
-import pieces.pawn as pawn
-import pieces.knight as knight
-import pieces.bishop as bishop
-import pieces.rook as rook
-import pieces.queen as queen
-import pieces.king as king
+import engine.pieces.pawn as pawn
+import engine.pieces.knight as knight
+import engine.pieces.bishop as bishop
+import engine.pieces.rook as rook
+import engine.pieces.queen as queen
+import engine.pieces.king as king
 
-from bitboard_util import set_bit, get_bit, clear_bit, index_of_LSB, index_of_MSB, bitscan
-from constants import PIECE_VALUES, POSITION_TO_INDEX, W_KING_CASTLE_CLEAR, W_QUEEN_CASTLE_CLEAR, B_KING_CASTLE_CLEAR, B_QUEEN_CASTLE_CLEAR, ZOBRIST_HASH_TABLE, PIECE_TO_INDEX
+from engine.bitboard_util import set_bit, get_bit, clear_bit, index_of_LSB, index_of_MSB, bitscan
+from engine.constants import PIECE_VALUES, POSITION_TO_INDEX, W_KING_CASTLE_CLEAR, W_QUEEN_CASTLE_CLEAR, B_KING_CASTLE_CLEAR, B_QUEEN_CASTLE_CLEAR, ZOBRIST_HASH_TABLE, PIECE_TO_INDEX
 
 class Position():
 
@@ -57,7 +57,7 @@ class Position():
     def compute_castle_bitstring(self):
         return (self.castle_availability["K"] << 3) | (self.castle_availability["Q"] << 2) | (self.castle_availability["k"] << 1) | self.castle_availability["q"]
     
-    def print_board(self):
+    def bitboards_to_list(self):
         piece_list = []
         for i in range(63, -1, -1):
             if get_bit(self.piece_bitboards["P"], i):
@@ -87,7 +87,10 @@ class Position():
                 piece_list.append('♚')
             else:
                 piece_list.append(' ')
+        return piece_list
 
+    def print_board(self):
+        piece_list = self.bitboards_to_list()
         row = 8
         for i in range(0, 64, 8):
             print("+---+---+---+---+---+---+---+---+")

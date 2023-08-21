@@ -1,5 +1,5 @@
-import pieces.bishop as bishop
-import pieces.rook as rook
+import engine.pieces.bishop as bishop
+import engine.pieces.rook as rook
 
 def queen_attacks(start_index, all_pieces):
     return ( 
